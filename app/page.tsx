@@ -7,12 +7,21 @@ import { Button } from "@/app/components/Button";
 import { ConsoleFooter } from "@/app/components/ConsoleFooter";
 import { Hero } from "@/app/components/Hero";
 import { IntroOverlay } from "@/app/components/IntroOverlay";
-import { PreviewGrid, type PreviewItem } from "@/app/components/PreviewGrid";
+import { type PreviewItem } from "@/app/components/PreviewGrid";
 import { UploadBox, type UploadBoxHandle } from "@/app/components/UploadBox";
 import {
   RecentGenerationsProvider,
   useRecentGenerations,
 } from "@/app/context/recent-generations-context";
+
+const GENERATE_API_URL = "http://127.0.0.1:8000/generate";
+
+/** Shape returned by `/generate` (adjust if your API differs). */
+type GenerateResponse = {
+  message?: string;
+  count?: number;
+  filenames?: string[];
+};
 
 function createPreviewItems(files: File[]): PreviewItem[] {
   return files.map((file) => ({
@@ -27,6 +36,8 @@ function createPreviewItems(files: File[]): PreviewItem[] {
 
 function HomeWorkspace() {
   const [items, setItems] = useState<PreviewItem[]>([]);
+  const [loading, setLoading] = useState(false);
+  const [response, setResponse] = useState<GenerateResponse | null>(null);
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const uploadRef = useRef<UploadBoxHandle>(null);
@@ -52,26 +63,85 @@ function HomeWorkspace() {
     };
   }, []);
 
+  const handleGenerate = useCallback(async () => {
+    if (!items.length) return;
+
+    const formData = new FormData();
+    items.forEach((item) => {
+      formData.append("images", item.file);
+    });
+
+    try {
+      setLoading(true);
+
+      const res = await fetch(GENERATE_API_URL, {
+        method: "POST",
+        body: formData,
+      });
+
+      const data = (await res.json()) as GenerateResponse;
+
+      console.log(data);
+
+      setResponse(data);
+
+      if (res.ok) {
+        await addRecentFromPreviews(items);
+      }
+    } catch (err) {
+      console.error("Error:", err);
+    } finally {
+      setLoading(false);
+    }
+  }, [items, addRecentFromPreviews]);
+
   return (
     <div className="flex min-h-0 flex-1 flex-col">
       <main className="flex-1 overflow-y-auto">
-        <div className="mx-auto flex w-full max-w-[720px] flex-col items-center px-4 py-10 md:px-8 md:py-14">
+        <div className="mx-auto flex w-full max-w-5xl flex-col items-center px-4 py-10 md:px-8 md:py-14">
           <Hero className="animate-fade-in-up opacity-0" />
 
           <div className="mt-10 flex w-full flex-col items-center gap-8">
-            <UploadBox ref={uploadRef} onFilesSelected={addFiles} />
-            <PreviewGrid items={items} onRemove={removeItem} />
+            <UploadBox
+              ref={uploadRef}
+              items={items}
+              onRemove={removeItem}
+              onFilesSelected={addFiles}
+            />
             <Button
               type="button"
-              disabled={items.length === 0}
+              disabled={items.length === 0 || loading}
               className="min-w-[220px] rounded-2xl"
-              onClick={async () => {
-                await addRecentFromPreviews(items);
-                /* backend wiring later */
-              }}
+              onClick={() => void handleGenerate()}
             >
-              Generate 3D Model
+              {loading ? "Generating…" : "Generate 3D Model"}
             </Button>
+
+            {response != null && (
+              <div className="w-full max-w-md rounded-2xl border border-white/[0.08] bg-[#262626]/90 px-4 py-4 text-left text-sm text-neutral-300 shadow-[0_8px_32px_rgba(0,0,0,0.35)]">
+                <p className="text-xs font-medium uppercase tracking-wider text-neutral-500">
+                  Response
+                </p>
+                {response.message != null && (
+                  <p className="mt-3">
+                    <strong className="font-medium text-neutral-200">Message:</strong>{" "}
+                    {response.message}
+                  </p>
+                )}
+                {response.count != null && (
+                  <p className="mt-2">
+                    <strong className="font-medium text-neutral-200">Count:</strong>{" "}
+                    {response.count}
+                  </p>
+                )}
+                {response.filenames != null && response.filenames.length > 0 && (
+                  <p className="mt-2 break-words">
+                    <strong className="font-medium text-neutral-200">Files:</strong>{" "}
+                    {response.filenames.join(", ")}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
         </div>
       </main>
