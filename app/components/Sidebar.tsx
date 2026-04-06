@@ -1,10 +1,12 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { FolderOpen, Home, Layers, Sparkles } from "lucide-react";
 
 import { MemberActions } from "@/app/components/MemberActions";
+import { useRecentGenerations } from "@/app/context/recent-generations-context";
 import { cn } from "@/app/lib/utils";
 
 const primaryNav = [
@@ -14,14 +16,9 @@ const primaryNav = [
   { href: "#", label: "Explore", icon: Sparkles },
 ];
 
-const recents = [
-  { label: "Chair scan — draft", href: "#" },
-  { label: "Product set A", href: "#" },
-  { label: "AR showroom", href: "#" },
-];
-
 export function Sidebar({ className }: { className?: string }) {
   const pathname = usePathname();
+  const { recents } = useRecentGenerations();
 
   return (
     <aside
@@ -69,18 +66,38 @@ export function Sidebar({ className }: { className?: string }) {
           <p className="pb-2 text-[11px] font-medium uppercase tracking-wider text-neutral-600">
             Recents
           </p>
-          <ul className="space-y-1">
-            {recents.map((r) => (
-              <li key={r.label}>
-                <Link
-                  href={r.href}
-                  className="block truncate rounded-lg px-2 py-1.5 text-sm text-neutral-500 transition-colors hover:bg-white/[0.03] hover:text-neutral-400"
-                >
-                  {r.label}
-                </Link>
-              </li>
-            ))}
-          </ul>
+          {recents.length === 0 ? (
+            <p className="px-2 py-1 text-xs leading-relaxed text-neutral-600">
+              No generations yet. Upload images and tap Generate to save a run
+              here.
+            </p>
+          ) : (
+            <ul className="space-y-1">
+              {recents.map((r) => (
+                <li key={r.id}>
+                  <Link
+                    href="/"
+                    className="flex items-center gap-2.5 rounded-lg px-2 py-1.5 text-sm text-neutral-500 transition-colors hover:bg-white/[0.03] hover:text-neutral-400"
+                    title={r.title}
+                  >
+                    <span className="relative size-7 shrink-0 overflow-hidden rounded-md bg-[#262626] ring-1 ring-white/[0.08]">
+                      {r.thumb ? (
+                        <Image
+                          src={r.thumb}
+                          alt=""
+                          width={28}
+                          height={28}
+                          className="size-full object-cover"
+                          unoptimized
+                        />
+                      ) : null}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate">{r.title}</span>
+                  </Link>
+                </li>
+              ))}
+            </ul>
+          )}
         </div>
       </nav>
 

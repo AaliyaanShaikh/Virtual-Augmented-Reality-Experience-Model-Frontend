@@ -9,6 +9,10 @@ import { Hero } from "@/app/components/Hero";
 import { IntroOverlay } from "@/app/components/IntroOverlay";
 import { PreviewGrid, type PreviewItem } from "@/app/components/PreviewGrid";
 import { UploadBox, type UploadBoxHandle } from "@/app/components/UploadBox";
+import {
+  RecentGenerationsProvider,
+  useRecentGenerations,
+} from "@/app/context/recent-generations-context";
 
 function createPreviewItems(files: File[]): PreviewItem[] {
   return files.map((file) => ({
@@ -21,11 +25,12 @@ function createPreviewItems(files: File[]): PreviewItem[] {
   }));
 }
 
-export default function Home() {
+function HomeWorkspace() {
   const [items, setItems] = useState<PreviewItem[]>([]);
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const uploadRef = useRef<UploadBoxHandle>(null);
+  const { addRecentFromPreviews } = useRecentGenerations();
 
   const addFiles = useCallback((incoming: FileList | File[]) => {
     const list = Array.from(incoming).filter((f) => f.type.startsWith("image/"));
@@ -48,33 +53,40 @@ export default function Home() {
   }, []);
 
   return (
-    <>
+    <div className="flex min-h-0 flex-1 flex-col">
+      <main className="flex-1 overflow-y-auto">
+        <div className="mx-auto flex w-full max-w-[720px] flex-col items-center px-4 py-10 md:px-8 md:py-14">
+          <Hero className="animate-fade-in-up opacity-0" />
+
+          <div className="mt-10 flex w-full flex-col items-center gap-8">
+            <UploadBox ref={uploadRef} onFilesSelected={addFiles} />
+            <PreviewGrid items={items} onRemove={removeItem} />
+            <Button
+              type="button"
+              disabled={items.length === 0}
+              className="min-w-[220px] rounded-2xl"
+              onClick={async () => {
+                await addRecentFromPreviews(items);
+                /* backend wiring later */
+              }}
+            >
+              Generate 3D Model
+            </Button>
+          </div>
+        </div>
+      </main>
+      <ConsoleFooter />
+    </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <RecentGenerationsProvider>
       <IntroOverlay />
       <AppShell>
-        <div className="flex min-h-0 flex-1 flex-col">
-          <main className="flex-1 overflow-y-auto">
-            <div className="mx-auto flex w-full max-w-[720px] flex-col items-center px-4 py-10 md:px-8 md:py-14">
-              <Hero className="animate-fade-in-up opacity-0" />
-
-              <div className="mt-10 flex w-full flex-col items-center gap-8">
-                <UploadBox ref={uploadRef} onFilesSelected={addFiles} />
-                <PreviewGrid items={items} onRemove={removeItem} />
-                <Button
-                  type="button"
-                  disabled={items.length === 0}
-                  className="min-w-[220px] rounded-2xl"
-                  onClick={() => {
-                    /* backend wiring later */
-                  }}
-                >
-                  Generate 3D Model
-                </Button>
-              </div>
-            </div>
-          </main>
-          <ConsoleFooter />
-        </div>
+        <HomeWorkspace />
       </AppShell>
-    </>
+    </RecentGenerationsProvider>
   );
 }
