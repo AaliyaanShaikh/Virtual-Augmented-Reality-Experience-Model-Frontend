@@ -2,10 +2,13 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { Navbar } from "@/app/components/Navbar";
-import { PreviewGrid, type PreviewItem } from "@/app/components/PreviewGrid";
-import { UploadBox } from "@/app/components/UploadBox";
+import { AppShell } from "@/app/components/AppShell";
 import { Button } from "@/app/components/Button";
+import { ConsoleFooter } from "@/app/components/ConsoleFooter";
+import { Hero } from "@/app/components/Hero";
+import { IntroOverlay } from "@/app/components/IntroOverlay";
+import { PreviewGrid, type PreviewItem } from "@/app/components/PreviewGrid";
+import { UploadBox, type UploadBoxHandle } from "@/app/components/UploadBox";
 
 function createPreviewItems(files: File[]): PreviewItem[] {
   return files.map((file) => ({
@@ -22,6 +25,7 @@ export default function Home() {
   const [items, setItems] = useState<PreviewItem[]>([]);
   const itemsRef = useRef(items);
   itemsRef.current = items;
+  const uploadRef = useRef<UploadBoxHandle>(null);
 
   const addFiles = useCallback((incoming: FileList | File[]) => {
     const list = Array.from(incoming).filter((f) => f.type.startsWith("image/"));
@@ -44,37 +48,33 @@ export default function Home() {
   }, []);
 
   return (
-    <div className="relative min-h-dvh overflow-x-hidden">
-      <Navbar />
+    <>
+      <IntroOverlay />
+      <AppShell>
+        <div className="flex min-h-0 flex-1 flex-col">
+          <main className="flex-1 overflow-y-auto">
+            <div className="mx-auto flex w-full max-w-[720px] flex-col items-center px-4 py-10 md:px-8 md:py-14">
+              <Hero className="animate-fade-in-up opacity-0" />
 
-      <main className="flex min-h-dvh flex-col items-center justify-center px-4 pb-16 pt-24 sm:px-6 sm:pb-20 sm:pt-28">
-        <div className="animate-fade-in-up flex w-full max-w-4xl flex-col items-center text-center opacity-0">
-          <p className="mb-3 text-xs font-medium uppercase tracking-[0.22em] text-neutral-400 sm:text-[0.7rem]">
-            Image to 3D
-          </p>
-          <h1 className="max-w-2xl text-balance text-3xl font-semibold tracking-tight text-neutral-900 sm:text-4xl md:text-5xl md:leading-[1.1]">
-            Create 3D Models from Images
-          </h1>
-          <p className="mt-4 max-w-xl text-pretty text-base leading-relaxed text-neutral-500 sm:text-lg">
-            Upload images and generate immersive AR/VR models instantly
-          </p>
-
-          <div className="mt-12 flex w-full flex-col items-center gap-10 sm:mt-14 sm:gap-12">
-            <UploadBox onFilesSelected={addFiles} />
-            <PreviewGrid items={items} onRemove={removeItem} />
-            <Button
-              type="button"
-              disabled={items.length === 0}
-              className="min-w-[200px]"
-              onClick={() => {
-                /* backend wiring later */
-              }}
-            >
-              Generate 3D Model
-            </Button>
-          </div>
+              <div className="mt-10 flex w-full flex-col items-center gap-8">
+                <UploadBox ref={uploadRef} onFilesSelected={addFiles} />
+                <PreviewGrid items={items} onRemove={removeItem} />
+                <Button
+                  type="button"
+                  disabled={items.length === 0}
+                  className="min-w-[220px] rounded-2xl"
+                  onClick={() => {
+                    /* backend wiring later */
+                  }}
+                >
+                  Generate 3D Model
+                </Button>
+              </div>
+            </div>
+          </main>
+          <ConsoleFooter />
         </div>
-      </main>
-    </div>
+      </AppShell>
+    </>
   );
 }

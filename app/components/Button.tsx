@@ -5,21 +5,21 @@ import { cva, type VariantProps } from "class-variance-authority";
 import { cn } from "@/app/lib/utils";
 
 const buttonVariants = cva(
-  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-2xl text-sm font-medium transition-all duration-300 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-neutral-900/20 focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
+  "inline-flex items-center justify-center gap-2 whitespace-nowrap rounded-xl text-sm font-medium transition-[transform,background-color,border-color,box-shadow] duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white/20 focus-visible:ring-offset-2 focus-visible:ring-offset-[#171717] disabled:pointer-events-none disabled:opacity-40 [&_svg]:pointer-events-none [&_svg]:size-4 [&_svg]:shrink-0",
   {
     variants: {
       variant: {
         default:
-          "bg-neutral-900 text-white shadow-[var(--shadow-soft)] hover:scale-[1.02] hover:shadow-[var(--shadow-soft-lg)] active:scale-[0.98]",
+          "bg-neutral-200 text-neutral-900 shadow-none hover:bg-white active:scale-[0.98]",
         secondary:
-          "border border-neutral-200/80 bg-white text-neutral-900 shadow-[var(--shadow-soft)] hover:scale-[1.01] hover:border-neutral-300 hover:shadow-[var(--shadow-soft-lg)] active:scale-[0.99]",
-        ghost: "text-neutral-700 hover:bg-neutral-100/80",
-        link: "text-neutral-900 underline-offset-4 hover:underline",
+          "border border-white/[0.12] bg-transparent text-neutral-200 hover:border-white/[0.18] hover:bg-white/[0.05]",
+        ghost: "text-neutral-400 hover:bg-white/[0.06] hover:text-neutral-200",
+        link: "text-neutral-400 underline-offset-4 hover:text-neutral-200 hover:underline",
       },
       size: {
-        default: "h-11 px-8 py-2",
-        sm: "h-9 rounded-xl px-4",
-        lg: "h-12 rounded-2xl px-10 text-base",
+        default: "h-10 px-6 py-2",
+        sm: "h-9 rounded-xl px-4 text-xs",
+        lg: "h-11 rounded-xl px-8 text-[15px]",
         icon: "size-10 rounded-xl",
       },
     },
