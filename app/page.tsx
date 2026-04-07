@@ -9,6 +9,7 @@ import { Hero } from "@/app/components/Hero";
 import { IntroOverlay } from "@/app/components/IntroOverlay";
 import { type PreviewItem } from "@/app/components/PreviewGrid";
 import { UploadBox, type UploadBoxHandle } from "@/app/components/UploadBox";
+import Viewer from "@/app/components/Viewer";
 import {
   RecentGenerationsProvider,
   useRecentGenerations,
@@ -38,10 +39,21 @@ function HomeWorkspace() {
   const [items, setItems] = useState<PreviewItem[]>([]);
   const [loading, setLoading] = useState(false);
   const [response, setResponse] = useState<GenerateResponse | null>(null);
+  const [modelUrl, setModelUrl] = useState<string | null>(null);
+  const modelUrlRef = useRef<string | null>(null);
   const itemsRef = useRef(items);
   itemsRef.current = items;
   const uploadRef = useRef<UploadBoxHandle>(null);
   const { addRecentFromPreviews } = useRecentGenerations();
+
+  const replaceModelUrl = useCallback((url: string | null) => {
+    if (modelUrlRef.current) {
+      URL.revokeObjectURL(modelUrlRef.current);
+      modelUrlRef.current = null;
+    }
+    if (url) modelUrlRef.current = url;
+    setModelUrl(url);
+  }, []);
 
   const addFiles = useCallback((incoming: FileList | File[]) => {
     const list = Array.from(incoming).filter((f) => f.type.startsWith("image/"));
@@ -60,6 +72,10 @@ function HomeWorkspace() {
   useEffect(() => {
     return () => {
       itemsRef.current.forEach((i) => URL.revokeObjectURL(i.url));
+      if (modelUrlRef.current) {
+        URL.revokeObjectURL(modelUrlRef.current);
+        modelUrlRef.current = null;
+      }
     };
   }, []);
 
@@ -79,13 +95,34 @@ function HomeWorkspace() {
         body: formData,
       });
 
-      const data = (await res.json()) as GenerateResponse;
+      const contentType = res.headers.get("content-type") ?? "";
 
-      console.log(data);
+      if (!res.ok) {
+        try {
+          const err = await res.json();
+          console.error(err);
+        } catch {
+          console.error(res.status, res.statusText);
+        }
+        return;
+      }
 
-      setResponse(data);
+      if (contentType.includes("application/json")) {
+        const data = (await res.json()) as GenerateResponse;
 
-      if (res.ok) {
+        console.log(data);
+
+        setResponse(data);
+
+        await addRecentFromPreviews(items);
+      } else {
+        const blob = await res.blob();
+        const url = URL.createObjectURL(blob);
+
+        replaceModelUrl(url);
+
+        setResponse(null);
+
         await addRecentFromPreviews(items);
       }
     } catch (err) {
@@ -93,7 +130,7 @@ function HomeWorkspace() {
     } finally {
       setLoading(false);
     }
-  }, [items, addRecentFromPreviews]);
+  }, [items, addRecentFromPreviews, replaceModelUrl]);
 
   return (
     <div className="flex min-h-0 flex-1 flex-col">
@@ -140,6 +177,15 @@ function HomeWorkspace() {
                     {response.filenames.join(", ")}
                   </p>
                 )}
+              </div>
+            )}
+
+            {modelUrl != null && (
+              <div className="mt-4 w-full">
+                <h2 className="mb-4 text-center text-lg font-medium text-neutral-200">
+                  Your 3D Model
+                </h2>
+                <Viewer modelUrl={modelUrl} />
               </div>
             )}
           </div>
